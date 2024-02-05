@@ -1,0 +1,108 @@
+# -*- coding: utf-8 -*-
+
+import random
+import tkinter as tk
+from tkinter import messagebox
+import pandas as pd
+
+def seleccionar_nombre(lista_nombres, pesos):
+    """
+    Función para seleccionar un nombre de la lista basado en los pesos dados.
+    """
+    total_pesos = sum(pesos)
+    valor_aleatorio = random.uniform(0, total_pesos)
+    acumulador = 0
+    for i, peso in enumerate(pesos):
+        acumulador += peso
+        if valor_aleatorio <= acumulador:
+            return lista_nombres[i]
+
+def actualizar_pesos(nombre_seleccionado, lista_nombres, pesos, factor_disminucion):
+    """
+    Función para actualizar los pesos después de que se selecciona un nombre.
+    """
+    indice = lista_nombres.index(nombre_seleccionado)
+    pesos[indice] *= factor_disminucion
+    return pesos
+
+def generar_lista_24_personas(lista_nombres, pesos):
+    """
+    Función para generar una lista de 24 personas seleccionadas aleatoriamente sin nombres repetidos.
+    """
+    personas_seleccionadas = []
+    
+    # Convertir la tupla en una lista
+    lista_nombres = list(lista_nombres)
+    
+    # Mezclar la lista de nombres
+    random.shuffle(lista_nombres)
+    
+    # Seleccionar los primeros 24 nombres de la lista mezclada
+    personas_seleccionadas = lista_nombres[:24]
+    
+    return personas_seleccionadas
+
+def agregar_nombre(event=None):
+    nombre = nombre_entry.get()
+    if nombre:
+        nombres_listbox.insert(tk.END, nombre)
+        nombre_entry.delete(0, tk.END)
+    else:
+        messagebox.showerror("Error", "Por favor ingresa un nombre.")
+
+def generar_lista_24_personas_gui():
+    nombres = nombres_listbox.get(0, tk.END)
+    if len(nombres) >= 24:
+        pesos_iniciales = [1] * len(nombres)
+        lista_24_personas = generar_lista_24_personas(nombres, pesos_iniciales)
+        lista_24_personas_text.config(state=tk.NORMAL)
+        lista_24_personas_text.delete("1.0", tk.END)
+        lista_24_personas_text.insert(tk.END, "\n".join(lista_24_personas))
+        lista_24_personas_text.config(state=tk.DISABLED)
+    else:
+        messagebox.showerror("Error", "Por favor agrega al menos 24 nombres.")
+
+# Crear ventana
+ventana = tk.Tk()
+ventana.title("Selección de 24 personas")
+
+# Crear y configurar widgets
+nombre_label = tk.Label(ventana, text="Nombre:")
+nombre_entry = tk.Entry(ventana, width=30)
+agregar_button = tk.Button(ventana, text="Agregar", command=agregar_nombre)
+nombres_listbox = tk.Listbox(ventana, width=40)
+generar_button = tk.Button(ventana, text="Generar lista", command=generar_lista_24_personas_gui)
+lista_24_personas_label = tk.Label(ventana, text="Lista de 24 personas seleccionadas:")
+lista_24_personas_text = tk.Text(ventana, width=50, height=10, state=tk.DISABLED)
+
+# Ubicar widgets en la ventana utilizando la opción sticky para que se expandan
+nombre_label.grid(row=0, column=0, padx=10, pady=5, sticky=tk.EW)
+nombre_entry.grid(row=0, column=1, padx=10, pady=5, sticky=tk.EW)
+agregar_button.grid(row=0, column=2, padx=10, pady=5, sticky=tk.EW)
+nombres_listbox.grid(row=1, column=0, columnspan=3, padx=10, pady=5, sticky=tk.NSEW)
+generar_button.grid(row=2, column=0, columnspan=3, padx=10, pady=5, sticky=tk.EW)
+lista_24_personas_label.grid(row=3, column=0, columnspan=3, padx=10, pady=5, sticky=tk.EW)
+lista_24_personas_text.grid(row=4, column=0, columnspan=3, padx=10, pady=5, sticky=tk.NSEW)
+
+# Asociar la función agregar_nombre al evento <Return> del Entry
+nombre_entry.bind("<Return>", agregar_nombre)
+
+# Configurar que las columnas y filas se expandan para llenar el espacio disponible
+ventana.columnconfigure(0, weight=1)
+ventana.rowconfigure(1, weight=1)
+ventana.rowconfigure(4, weight=1)
+
+# Leer datos del archivo Excel
+try:
+    datos_excel = pd.read_excel("data.xlsx")
+    nombres = datos_excel["Nombre"].tolist()
+    participaciones = datos_excel["Participaciones"].tolist()
+    total_participaciones = sum(participaciones)
+    pesos_iniciales = [total_participaciones / participacion if participacion != 0 else total_participaciones for participacion in participaciones]
+    for nombre in nombres:
+        nombres_listbox.insert(tk.END, nombre)
+except Exception as e:
+    print("Error al leer el archivo Excel:", e)
+
+# Ejecutar aplicación
+ventana.mainloop()
